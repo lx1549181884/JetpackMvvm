@@ -3,6 +3,7 @@ package com.rick.jetpackmvvm.commom
 import android.annotation.SuppressLint
 import android.text.InputType
 import android.view.View
+import android.view.animation.Animation
 import android.widget.EditText
 import android.widget.TextView
 import androidx.annotation.ColorInt
@@ -60,10 +61,12 @@ object CommonBindingAdapter {
     fun drawableStart(view: TextView, @DrawableRes drawable: Int) {
         val drawables = view.compoundDrawablesRelative
         drawables[0] = ResourceUtils.getDrawable(drawable)
-        view.setCompoundDrawablesRelativeWithIntrinsicBounds(drawables[0],
+        view.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            drawables[0],
             drawables[1],
             drawables[2],
-            drawables[3])
+            drawables[3]
+        )
     }
 
     /**
@@ -112,5 +115,18 @@ object CommonBindingAdapter {
         view.inputType =
             if (visible) inputType xor InputType.TYPE_TEXT_VARIATION_PASSWORD else inputType or InputType.TYPE_TEXT_VARIATION_PASSWORD
         view.setSelection(selection) // 恢复光标位置
+    }
+
+    /**
+     * 动画
+     */
+    @JvmStatic
+    @BindingAdapter(value = ["anim", "enableAnim"], requireAll = false)
+    fun anim(view: View, anim: Animation, enableAnim: Boolean = true) {
+        if (enableAnim) {
+            view.startAnimation(anim)
+        } else {
+            view.clearAnimation()
+        }
     }
 }
