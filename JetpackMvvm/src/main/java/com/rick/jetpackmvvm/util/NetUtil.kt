@@ -1,8 +1,13 @@
 package com.rick.jetpackmvvm.util
 
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.blankj.utilcode.util.ThreadUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.rick.jetpackmvvm.base.BaseResponseBean
 import okhttp3.OkHttpClient
@@ -19,17 +24,21 @@ import javax.net.ssl.HttpsURLConnection
 object NetUtil {
     private lateinit var host: String
     private var client: OkHttpClient? = null
-    private var callback: Callback? = null
-
-    @JvmStatic
-    fun init(host: String, client: OkHttpClient? = null, callback: Callback? = null) {
-        NetUtil.host = host
-        NetUtil.client = client
-        NetUtil.callback = callback
+    private lateinit var i: I
+    private val onFailDefault = object : OnFail {
+        override fun onFail(code: Int, msg: String?) = ToastUtils.showShort("$code $msg")
     }
 
-    interface Callback {
+    @JvmStatic
+    fun init(host: String, client: OkHttpClient? = null, i: I) {
+        NetUtil.host = host
+        NetUtil.client = client
+        NetUtil.i = i
+    }
+
+    interface I {
         fun onUnauthorized(msg: String)
+        fun createLoading(): DialogFragment
     }
 
     interface Api<T : Any> {
@@ -55,28 +64,90 @@ object NetUtil {
     }
 
     @JvmStatic
-    fun <D : Any, R : BaseResponseBean<D>> request(
-        owner: LifecycleOwner,
+    fun <D : Any> request(
+        fragment: Fragment,
         api: Api<D>,
         onSuccess: OnSuccess<D?>?
     ) {
-        request(owner, api, onSuccess, object : OnFail {
-            override fun onFail(code: Int, msg: String?) = ToastUtils.showShort("$code $msg")
-        })
+        request(fragment, api, onSuccess, onFailDefault, true)
     }
 
     @JvmStatic
-    fun <D : Any, R : BaseResponseBean<D>> request(
-        owner: LifecycleOwner,
+    fun <D : Any> request(
+        fragment: Fragment,
+        api: Api<D>,
+        onSuccess: OnSuccess<D?>?,
+        onFail: OnFail?,
+        loading: Boolean
+    ) {
+        if (loading) {
+            requestWithLoading(fragment.childFragmentManager, api, onSuccess, onFail)
+        } else {
+            request(fragment.viewLifecycleOwner, api, onSuccess, onFail)
+        }
+    }
+
+    @JvmStatic
+    fun <D : Any> request(
+        activity: AppCompatActivity,
+        api: Api<D>,
+        onSuccess: OnSuccess<D?>?
+    ) {
+        request(activity, api, onSuccess, onFailDefault, true)
+    }
+
+    @JvmStatic
+    fun <D : Any> request(
+        activity: AppCompatActivity,
+        api: Api<D>,
+        onSuccess: OnSuccess<D?>?,
+        onFail: OnFail? = onFailDefault,
+        loading: Boolean = true
+    ) {
+        if (loading) {
+            requestWithLoading(activity.supportFragmentManager, api, onSuccess, onFail)
+        } else {
+            request(activity, api, onSuccess, onFail)
+        }
+    }
+
+    @JvmStatic
+    fun <D : Any> requestWithLoading(
+        fragmentManager: FragmentManager,
         api: Api<D>,
         onSuccess: OnSuccess<D?>?,
         onFail: OnFail?
     ) {
-        owner.lifecycle.let { lifecycle ->
+        with(i.createLoading()) {
+            show(fragmentManager, null)
+            ThreadUtils.runOnUiThreadDelayed({
+                request(this, api, object : OnSuccess<D?> {
+                    override fun onSuccess(t: D?) {
+                        dismissAllowingStateLoss()
+                        onSuccess?.onSuccess(t)
+                    }
+                }, object : OnFail {
+                    override fun onFail(code: Int, msg: String?) {
+                        dismissAllowingStateLoss()
+                        onFail?.onFail(code, msg)
+                    }
+                })
+            }, 1)
+        }
+    }
+
+    @JvmStatic
+    fun <D : Any, R : BaseResponseBean<D>> request(
+        owner: LifecycleOwner?,
+        api: Api<D>,
+        onSuccess: OnSuccess<D?>?,
+        onFail: OnFail?
+    ) {
+        owner?.lifecycle.let { lifecycle ->
             val callback: retrofit2.Callback<R> = object : retrofit2.Callback<R> {
                 override fun onResponse(call: Call<R>, response: Response<R>) {
                     try {
-                        if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                        if (lifecycle?.currentState == Lifecycle.State.DESTROYED) {
                             return
                         }
                         if (response.isSuccessful) {
@@ -95,7 +166,7 @@ object NetUtil {
                             val msg =
                                 if (errorBody != null) errorBody.string() else "no message"
                             if (response.code() == HttpsURLConnection.HTTP_UNAUTHORIZED) { // token 失效
-                                NetUtil.callback?.onUnauthorized(msg)
+                                i.onUnauthorized(msg)
                             } else {
                                 onFail(-1, msg)
                             }
@@ -106,7 +177,7 @@ object NetUtil {
                 }
 
                 override fun onFailure(call: Call<R>, t: Throwable) {
-                    if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                    if (lifecycle?.currentState == Lifecycle.State.DESTROYED) {
                         return
                     }
                     onFail(-1, t.message)
@@ -124,7 +195,7 @@ object NetUtil {
                         call.enqueue(callback)
                     }
                     Lifecycle.State.DESTROYED -> {
-                        lifecycle.removeObserver(observer[0]!!)
+                        lifecycle?.removeObserver(observer[0]!!)
                         if (call.isExecuted) {
                             call.cancel()
                         }
@@ -132,9 +203,9 @@ object NetUtil {
                     else -> {}
                 }
             }
-            lifecycle.addObserver(observer[0]!!)
-            when (lifecycle.currentState) {
-                Lifecycle.State.STARTED, Lifecycle.State.RESUMED -> if (!call.isExecuted) {
+            lifecycle?.addObserver(observer[0]!!)
+            when (lifecycle?.currentState) {
+                null, Lifecycle.State.STARTED, Lifecycle.State.RESUMED -> if (!call.isExecuted) {
                     call.enqueue(callback)
                 }
                 else -> {}
