@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.blankj.utilcode.util.ClickUtils
 import com.blankj.utilcode.util.ResourceUtils
+import com.rick.jetpackmvvm.commom.CommonExtend.getTextWatchers
 import com.rick.jetpackmvvm.util.ViewUtil.addRecyclerViewDivider
 
 /**
@@ -110,10 +111,9 @@ object CommonBindingAdapter {
     @JvmStatic
     @BindingAdapter("pwdVisible")
     fun pwdVisible(view: EditText, visible: Boolean) {
-        val inputType = view.inputType // 原先的inputType
         val selection = view.selectionStart // 获取光标位置
         view.inputType =
-            if (visible) inputType xor InputType.TYPE_TEXT_VARIATION_PASSWORD else inputType or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            InputType.TYPE_CLASS_TEXT or (if (visible) InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD else InputType.TYPE_TEXT_VARIATION_PASSWORD)
         view.setSelection(selection) // 恢复光标位置
     }
 
@@ -128,5 +128,25 @@ object CommonBindingAdapter {
         } else {
             view.clearAnimation()
         }
+    }
+
+    /**
+     * EditText 正小数
+     * @param places 小数位数
+     */
+    @JvmStatic
+    @BindingAdapter("numberDecimal")
+    fun numberDecimal(view: EditText, places: Int) {
+        view.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        view.getTextWatchers()?.iterator()?.let { iterator ->
+            while (iterator.hasNext()) {
+                iterator.next().apply {
+                    if (this is NumDecTextWatcher) {
+                        iterator.remove()
+                    }
+                }
+            }
+        }
+        view.addTextChangedListener(NumDecTextWatcher(view, places))
     }
 }
