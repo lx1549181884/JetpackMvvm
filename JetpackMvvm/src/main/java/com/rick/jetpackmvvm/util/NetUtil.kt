@@ -182,9 +182,7 @@ object NetUtil {
             },
             object : OnFail {
                 override fun onFail(code: Int, msg: String?) {
-                    ThreadUtils.runOnUiThread {
-                        onFail?.onFail(code, msg)
-                    }
+                    onFail?.onFail(code, msg)
                 }
             }
         )
@@ -214,7 +212,7 @@ object NetUtil {
                         } else {
                             val msg = response.errorBody()?.string() ?: "no message"
                             if (response.code() == HttpsURLConnection.HTTP_UNAUTHORIZED) { // token 失效
-                                config.onUnauthorized(msg)
+                                ThreadUtils.runOnUiThread { config.onUnauthorized(msg) }
                             } else {
                                 onFail(-1, msg)
                             }
@@ -232,7 +230,7 @@ object NetUtil {
                 }
 
                 private fun onFail(code: Int, msg: String?) {
-                    onFail?.onFail(code, msg)
+                    ThreadUtils.runOnUiThread { onFail?.onFail(code, msg) }
                 }
             }
             val call: Call<R> = api.invoke()
@@ -282,17 +280,17 @@ object NetUtil {
                 try {
                     os = BufferedOutputStream(FileOutputStream(File(filePath), false), 1024)
                     var curSize = 0
-                    onProgress?.onProgressUpdate(0.0)
+                    ThreadUtils.runOnUiThread { onProgress?.onProgressUpdate(0.0) }
                     val data = ByteArray(1024)
                     var len: Int
                     while (inputStream.read(data).also { len = it } != -1) {
                         os.write(data, 0, len)
                         curSize += len
-                        onProgress?.onProgressUpdate(curSize / totalSize)
+                        ThreadUtils.runOnUiThread { onProgress?.onProgressUpdate(curSize / totalSize) }
                     }
-                    onSuccess?.onSuccess(null)
+                    ThreadUtils.runOnUiThread { onSuccess?.onSuccess(null) }
                 } catch (e: Exception) {
-                    onFail?.onFail(-1, e.message)
+                    ThreadUtils.runOnUiThread { onFail?.onFail(-1, e.message) }
                 } finally {
                     inputStream.close()
                     os?.close()
