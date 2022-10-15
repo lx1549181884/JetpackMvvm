@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentResultListener
@@ -34,6 +35,18 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : ViewModel> : Fragmen
                 parentFragmentManager.setFragmentResultListener(key, viewLifecycleOwner, this)
             }
         }
+
+        try {
+            javaClass.getDeclaredMethod("onBackPressed")
+            requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        this@BaseFragment.onBackPressed()
+                    }
+                })
+        } catch (e: Exception) {
+        }
     }
 
     protected open fun listenerKeys(): Array<String>? = null
@@ -41,4 +54,6 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : ViewModel> : Fragmen
     override fun onFragmentResult(requestKey: String, result: Bundle) {}
 
     protected abstract fun init(binding: Binding, viewModel: Vm)
+
+    protected open fun onBackPressed() {}
 }
