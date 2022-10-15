@@ -149,13 +149,17 @@ object NetUtil {
             show(fragmentManager, null)
             request(this, api, object : OnSuccess<D?> {
                 override fun onSuccess(data: D?) {
-                    dismissAllowingStateLoss()
-                    onSuccess?.onSuccess(data)
+                    if (isAdded) {
+                        dismissAllowingStateLoss()
+                        onSuccess?.onSuccess(data)
+                    }
                 }
             }, object : OnFail {
                 override fun onFail(code: Int, msg: String?) {
-                    dismissAllowingStateLoss()
-                    onFail?.onFail(code, msg)
+                    if (isAdded) {
+                        dismissAllowingStateLoss()
+                        onFail?.onFail(code, msg)
+                    }
                 }
             })
         }
