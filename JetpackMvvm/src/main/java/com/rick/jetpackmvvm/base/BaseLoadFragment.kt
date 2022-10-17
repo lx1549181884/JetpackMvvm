@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import com.rick.jetpackmvvm.commom.NoNullLiveData
 import com.rick.jetpackmvvm.commom.NoNullValue
 
-abstract class BaseLoadFragment<Binding : ViewDataBinding, Vm : ViewModel, Response> :
+abstract class BaseLoadFragment<Binding : ViewDataBinding, Vm : BaseVm, Response> :
     BaseFragment<Binding, Vm>() {
     class LoadViewModel : ViewModel() {
         var loadState = NoNullLiveData(object : NoNullValue<LoadState> {

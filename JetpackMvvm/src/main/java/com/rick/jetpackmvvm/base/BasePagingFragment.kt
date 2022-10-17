@@ -1,7 +1,6 @@
 package com.rick.jetpackmvvm.base
 
 import androidx.databinding.ViewDataBinding
-import androidx.lifecycle.ViewModel
 import androidx.paging.LoadState
 import androidx.paging.Pager
 import androidx.paging.liveData
@@ -9,7 +8,7 @@ import com.rick.jetpackmvvm.commom.CommonLoadStateAdapter
 import com.rick.jetpackmvvm.commom.Diffable
 import com.rick.jetpackmvvm.databinding.FragmentPagingBinding
 
-abstract class BasePagingFragment<Bean : Diffable, ItemBinding : ViewDataBinding, Vm : ViewModel> :
+abstract class BasePagingFragment<Bean : Diffable, ItemBinding : ViewDataBinding, Vm : BaseVm> :
     BaseFragment<FragmentPagingBinding, Vm>() {
     protected var adapter: PagingAdapter? = null
     override fun init(binding: FragmentPagingBinding, viewModel: Vm) {

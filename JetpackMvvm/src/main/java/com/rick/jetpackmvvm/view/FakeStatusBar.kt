@@ -1,6 +1,7 @@
 package com.rick.jetpackmvvm.view
 
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
@@ -31,8 +32,12 @@ class FakeStatusBar : View {
 
     override fun setBackgroundColor(color: Int) {
         super.setBackgroundColor(color)
-        ActivityUtils.getTopActivity()?.let {
-            BarUtils.setStatusBarLightMode(it, getLight(color) > 0xFF * 0.7)
+        ActivityUtils.getActivityByContext(context)?.let {
+            BarUtils.setStatusBarLightMode(
+                it,
+                color == Color.TRANSPARENT || getLight(color) > 0xFF * 0.6
+            )
+            visibility = if (color == Color.TRANSPARENT) GONE else VISIBLE
         }
     }
 

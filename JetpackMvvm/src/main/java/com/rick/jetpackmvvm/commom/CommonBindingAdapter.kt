@@ -39,6 +39,7 @@ object CommonBindingAdapter {
         view.isEnabled = enable
     }
 
+    @JvmStatic
     @BindingAdapter("backgroundColor")
     fun backgroundColor(view: View, @ColorInt bgColor: Int) {
         view.setBackgroundColor(bgColor)

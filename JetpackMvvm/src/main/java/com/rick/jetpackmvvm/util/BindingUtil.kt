@@ -80,7 +80,22 @@ object BindingUtil {
         viewGroup: ViewGroup?,
         attachToRoot: Boolean,
     ): B = createBinding(
-        getActualType<C, P, B>(child, parent, index),
+        owner,
+        getActualType(child, parent, index),
+        inflater,
+        viewGroup,
+        attachToRoot
+    )
+
+    @JvmStatic
+    fun <B : ViewDataBinding> createBinding(
+        owner: LifecycleOwner?,
+        clazz: Class<B>,
+        inflater: LayoutInflater,
+        viewGroup: ViewGroup?,
+        attachToRoot: Boolean,
+    ): B = createBinding(
+        clazz,
         inflater,
         viewGroup,
         attachToRoot
