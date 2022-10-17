@@ -27,13 +27,15 @@ object BindingUtil {
         fragment: C,
         parent: Class<P>,
         @IntRange(from = 0) index: Int,
-    ): B = createBinding(fragment.viewLifecycleOwner,
+    ): B = createBinding(
+        fragment.viewLifecycleOwner,
         fragment,
         parent,
         index,
         fragment.layoutInflater,
         null,
-        false)
+        false
+    )
 
     @JvmStatic
     fun <C : P, P : Any, B : ViewDataBinding> createBinding(
@@ -41,13 +43,32 @@ object BindingUtil {
         child: C,
         parent: Class<P>,
         @IntRange(from = 0) index: Int,
-    ): B = createBinding(null,
+    ): B = createBinding(
+        null,
+        viewGroup,
+        child,
+        parent,
+        index,
+        false
+    )
+
+    @JvmStatic
+    fun <C : P, P : Any, B : ViewDataBinding> createBinding(
+        owner: LifecycleOwner?,
+        viewGroup: ViewGroup,
+        child: C,
+        parent: Class<P>,
+        @IntRange(from = 0) index: Int,
+        attachToRoot: Boolean,
+    ): B = createBinding(
+        owner,
         child,
         parent,
         index,
         LayoutInflater.from(viewGroup.context),
         viewGroup,
-        false)
+        attachToRoot
+    )
 
     @JvmStatic
     fun <C : P, P : Any, B : ViewDataBinding> createBinding(
@@ -58,10 +79,12 @@ object BindingUtil {
         inflater: LayoutInflater,
         viewGroup: ViewGroup?,
         attachToRoot: Boolean,
-    ): B = createBinding(getActualType<C, P, B>(child, parent, index),
+    ): B = createBinding(
+        getActualType<C, P, B>(child, parent, index),
         inflater,
         viewGroup,
-        attachToRoot).apply { lifecycleOwner = owner }
+        attachToRoot
+    ).apply { lifecycleOwner = owner }
 
     @JvmStatic
     fun <B : ViewDataBinding> createBinding(
