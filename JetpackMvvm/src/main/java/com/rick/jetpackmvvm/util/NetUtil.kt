@@ -1,7 +1,5 @@
 package com.rick.jetpackmvvm.util
 
-import android.Manifest
-import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
@@ -263,7 +261,6 @@ object NetUtil {
         }
     }
 
-    @RequiresPermission(Manifest.permission_group.STORAGE)
     @JvmStatic
     fun download(
         owner: LifecycleOwner?,
