@@ -11,7 +11,9 @@ import com.blankj.utilcode.util.BarUtils
 
 class FakeStatusBar : View {
     constructor(context: Context?) : super(context)
+
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
+
     constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(
         context,
         attrs,
@@ -30,14 +32,17 @@ class FakeStatusBar : View {
         super.setLayoutParams(params)
     }
 
+    private var color = Color.TRANSPARENT
+
     override fun setBackgroundColor(color: Int) {
         super.setBackgroundColor(color)
+        this.color = color
         ActivityUtils.getActivityByContext(context)?.let {
             BarUtils.setStatusBarLightMode(
                 it,
                 color == Color.TRANSPARENT || getLight(color) > 0xFF * 0.6
             )
-            visibility = if (color == Color.TRANSPARENT) GONE else VISIBLE
+            refreshVisibility()
         }
     }
 
@@ -48,5 +53,20 @@ class FakeStatusBar : View {
         val g = colorLong / 0x100L and 0xFF
         val b = colorLong and 0xFF
         return r * 0.3 + g * 0.59 + b * 0.11
+    }
+
+    override fun layout(l: Int, t: Int, r: Int, b: Int) {
+        super.layout(l, t, r, b)
+        refreshVisibility()
+    }
+
+    private fun refreshVisibility() {
+        visibility = IntArray(2).apply { getLocationOnScreen(this) }[1].let {
+            if (it == 0 && color != Color.TRANSPARENT) {
+                VISIBLE
+            } else {
+                GONE
+            }
+        }
     }
 }
