@@ -32,12 +32,16 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
         baseBinding = this
     }.root.apply {
         binding = BindingUtil.createBinding(
-            viewLifecycleOwner,
-            this as ViewGroup,
             this@BaseFragment,
             BaseFragment::class.java,
-            0,
-            true
+            0
+        )
+        (this as ViewGroup).addView(
+            binding.root,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
         )
     }
 
