@@ -127,7 +127,7 @@ object NetUtil {
         api: Api<D>,
         onSuccess: OnSuccess<D?>?,
         onFail: OnFail? = onFailDefault,
-        loading: Boolean = true
+        loading: Boolean
     ) {
         if (loading) {
             requestWithLoading(activity.supportFragmentManager, api, onSuccess, onFail)
@@ -143,23 +143,25 @@ object NetUtil {
         onSuccess: OnSuccess<D?>?,
         onFail: OnFail?
     ) {
-        with(config.createLoading()) {
-            show(fragmentManager, null)
-            request(this, api, object : OnSuccess<D?> {
-                override fun onSuccess(data: D?) {
-                    if (isAdded) {
-                        dismissAllowingStateLoss()
-                        onSuccess?.onSuccess(data)
+        if (!fragmentManager.isStateSaved) {
+            with(config.createLoading()) {
+                show(fragmentManager, null)
+                request(this, api, object : OnSuccess<D?> {
+                    override fun onSuccess(data: D?) {
+                        if (isAdded) {
+                            dismissAllowingStateLoss()
+                            onSuccess?.onSuccess(data)
+                        }
                     }
-                }
-            }, object : OnFail {
-                override fun onFail(code: Int, msg: String?) {
-                    if (isAdded) {
-                        dismissAllowingStateLoss()
-                        onFail?.onFail(code, msg)
+                }, object : OnFail {
+                    override fun onFail(code: Int, msg: String?) {
+                        if (isAdded) {
+                            dismissAllowingStateLoss()
+                            onFail?.onFail(code, msg)
+                        }
                     }
-                }
-            })
+                })
+            }
         }
     }
 
