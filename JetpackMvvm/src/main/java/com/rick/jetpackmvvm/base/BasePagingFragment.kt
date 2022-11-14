@@ -1,5 +1,6 @@
 package com.rick.jetpackmvvm.base
 
+import android.view.View
 import androidx.databinding.ViewDataBinding
 import androidx.paging.LoadState
 import androidx.paging.Pager
@@ -14,7 +15,10 @@ abstract class BasePagingFragment<Bean : Diffable, ItemBinding : ViewDataBinding
     override fun init(binding: FragmentPagingBinding, viewModel: Vm) {
         adapter = PagingAdapter().apply {
             binding.refresh.setOnRefreshListener { refresh() }
-            addLoadStateListener { binding.refresh.isRefreshing = it.refresh is LoadState.Loading }
+            addLoadStateListener {
+                binding.refresh.isRefreshing = it.refresh is LoadState.Loading
+                binding.noData.visibility = if (it.refresh is LoadState.NotLoading && itemCount == 0) View.VISIBLE else View.GONE
+            }
             binding.adapter = withLoadStateFooter(CommonLoadStateAdapter(this::retry))
             pager.liveData.observe(viewLifecycleOwner) { submitData(lifecycle, it) }
         }
