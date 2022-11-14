@@ -1,6 +1,7 @@
 package com.rick.jetpackmvvm.base
 
 import android.view.View
+import androidx.appcompat.widget.ThemeUtils
 import androidx.databinding.ViewDataBinding
 import androidx.paging.LoadState
 import androidx.paging.Pager
@@ -22,6 +23,7 @@ abstract class BasePagingFragment<Bean : Diffable, ItemBinding : ViewDataBinding
             binding.adapter = withLoadStateFooter(CommonLoadStateAdapter(this::retry))
             pager.liveData.observe(viewLifecycleOwner) { submitData(lifecycle, it) }
         }
+        binding.refresh.setColorSchemeColors(ThemeUtils.getThemeAttrColor(requireContext(),android.R.attr.colorPrimary))
     }
 
     inner class PagingAdapter : BasePagingAdapter<Bean, ItemBinding>() {
