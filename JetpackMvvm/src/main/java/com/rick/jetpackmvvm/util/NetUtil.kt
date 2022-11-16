@@ -42,7 +42,7 @@ object NetUtil {
 
     interface Config {
         fun getHost(): String
-        fun getHeaders(): Map<String, String>?
+        fun getHeaders(host: String): Map<String, String>?
         fun onUnauthorized(msg: String)
         fun createLoading(): DialogFragment
     }
@@ -71,7 +71,7 @@ object NetUtil {
                     .addInterceptor(Interceptor {
                         it.proceed(
                             it.request().newBuilder().apply {
-                                config.getHeaders()?.forEach { (k, v) ->
+                                config.getHeaders(it.request().url.host)?.forEach { (k, v) ->
                                     run {
                                         LogUtils.d("NetUtil $k $v")
                                         addHeader(k, v)
