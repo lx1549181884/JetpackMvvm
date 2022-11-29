@@ -39,6 +39,7 @@ object CommonBindingAdapter {
         view.isEnabled = enable
     }
 
+    @JvmStatic
     @BindingAdapter("backgroundColor")
     fun backgroundColor(view: View, @ColorInt bgColor: Int) {
         view.setBackgroundColor(bgColor)
@@ -58,10 +59,22 @@ object CommonBindingAdapter {
     }
 
     @JvmStatic
-    @BindingAdapter("drawableStart")
-    fun drawableStart(view: TextView, @DrawableRes drawable: Int) {
+    @BindingAdapter(
+        value = ["drawableStart", "drawableTop", "drawableEnd", "drawableBottom"],
+        requireAll = false
+    )
+    fun drawableStart(
+        view: TextView,
+        @DrawableRes drawableStart: Int?,
+        @DrawableRes drawableTop: Int?,
+        @DrawableRes drawableEnd: Int?,
+        @DrawableRes drawableBottom: Int?
+    ) {
         val drawables = view.compoundDrawablesRelative
-        drawables[0] = ResourceUtils.getDrawable(drawable)
+        drawableStart?.let { drawables[0] = ResourceUtils.getDrawable(it) }
+        drawableTop?.let { drawables[1] = ResourceUtils.getDrawable(it) }
+        drawableEnd?.let { drawables[2] = ResourceUtils.getDrawable(it) }
+        drawableBottom?.let { drawables[3] = ResourceUtils.getDrawable(it) }
         view.setCompoundDrawablesRelativeWithIntrinsicBounds(
             drawables[0],
             drawables[1],

@@ -1,13 +1,12 @@
 package com.rick.jetpackmvvm.base
 
 import androidx.databinding.ViewDataBinding
-import androidx.lifecycle.ViewModel
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import com.rick.jetpackmvvm.commom.Diffable
 
-abstract class BasePageSizeFragment<Bean : Diffable, ItemBinding : ViewDataBinding, Vm : ViewModel> :
+abstract class BasePageSizeFragment<Bean : Diffable, ItemBinding : ViewDataBinding, Vm : BaseVm> :
     BasePagingFragment<Bean, ItemBinding, Vm>() {
 
     override val pager: Pager<Int, Bean>
