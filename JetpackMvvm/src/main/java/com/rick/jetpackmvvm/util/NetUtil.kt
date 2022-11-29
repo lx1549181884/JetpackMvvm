@@ -12,6 +12,7 @@ import com.rick.jetpackmvvm.base.BaseResponseBean
 import com.rick.jetpackmvvm.commom.DownloadService
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
 import retrofit2.Callback
@@ -45,6 +46,7 @@ object NetUtil {
         fun getHeaders(host: String): Map<String, String>?
         fun onUnauthorized(msg: String)
         fun createLoading(): DialogFragment
+        fun getFailInterceptor(): OnFail? = null
     }
 
     interface Api<D : Any> {
@@ -174,7 +176,7 @@ object NetUtil {
     ) {
         request(
             owner,
-            { api.request() as Call<R> },
+            { api.request() },
             {
                 ThreadUtils.runOnUiThread {
                     if (it.isSuccess()) {
@@ -211,18 +213,18 @@ object NetUtil {
                             if (body != null) {
                                 onResponseBody.invoke(body)
                             } else {
-                                onFail(-1, "response body is null")
+                                onFail(call.request(), -1, "response body is null")
                             }
                         } else {
                             val msg = response.errorBody()?.string() ?: "no message"
                             if (response.code() == HttpsURLConnection.HTTP_UNAUTHORIZED) { // token 失效
                                 ThreadUtils.runOnUiThread { config.onUnauthorized(msg) }
                             } else {
-                                onFail(-1, msg)
+                                onFail(call.request(), -1, msg)
                             }
                         }
                     } catch (e: Exception) {
-                        onFail(-1, e.message)
+                        onFail(call.request(), -1, e.message)
                     }
                 }
 
@@ -230,11 +232,14 @@ object NetUtil {
                     if (lifecycle?.currentState == Lifecycle.State.DESTROYED) {
                         return
                     }
-                    onFail(-1, t.message)
+                    onFail(call.request(), -1, t.message)
                 }
 
-                private fun onFail(code: Int, msg: String?) {
-                    ThreadUtils.runOnUiThread { onFail?.onFail(code, msg) }
+                private fun onFail(req: Request, code: Int, msg: String?) {
+                    ThreadUtils.runOnUiThread {
+                        onFail?.onFail(code, msg)
+                        config.getFailInterceptor()?.onFail(code, "${req.url.toUrl()} ${msg}}")
+                    }
                 }
             }
             val call: Call<R> = api.invoke()
