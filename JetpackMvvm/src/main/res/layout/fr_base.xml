@@ -6,6 +6,10 @@
         <variable
             name="vm"
             type="com.rick.jetpackmvvm.base.BaseVm" />
+
+        <variable
+            name="fr"
+            type="com.rick.jetpackmvvm.base.BaseFragment" />
     </data>
 
     <LinearLayout
@@ -18,5 +22,31 @@
             backgroundColor="@{vm.statusBarColor}"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                visible="@{vm.loadState == vm.loadState.LOADING}"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/loading" />
+
+            <TextView
+                onClick="@{()-> fr.load()}"
+                visible="@{vm.loadState == vm.loadState.FAIL}"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/load_error_click_retry" />
+
+            <FrameLayout
+                android:id="@+id/content"
+                visible="@{vm.loadState == vm.loadState.SUCCESS}"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </RelativeLayout>
     </LinearLayout>
 </layout>

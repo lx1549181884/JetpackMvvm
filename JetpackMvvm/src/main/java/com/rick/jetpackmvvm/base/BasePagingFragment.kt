@@ -18,12 +18,18 @@ abstract class BasePagingFragment<Bean : Diffable, ItemBinding : ViewDataBinding
             binding.refresh.setOnRefreshListener { refresh() }
             addLoadStateListener {
                 binding.refresh.isRefreshing = it.refresh is LoadState.Loading
-                binding.noData.visibility = if (it.refresh is LoadState.NotLoading && itemCount == 0) View.VISIBLE else View.GONE
+                binding.noData.visibility =
+                    if (it.refresh is LoadState.NotLoading && itemCount == 0) View.VISIBLE else View.GONE
             }
             binding.adapter = withLoadStateFooter(CommonLoadStateAdapter(this::retry))
             pager.liveData.observe(viewLifecycleOwner) { submitData(lifecycle, it) }
         }
-        binding.refresh.setColorSchemeColors(ThemeUtils.getThemeAttrColor(requireContext(),android.R.attr.colorPrimary))
+        binding.refresh.setColorSchemeColors(
+            ThemeUtils.getThemeAttrColor(
+                requireContext(),
+                android.R.attr.colorPrimary
+            )
+        )
     }
 
     inner class PagingAdapter : BasePagingAdapter<Bean, ItemBinding>() {
@@ -32,7 +38,7 @@ abstract class BasePagingFragment<Bean : Diffable, ItemBinding : ViewDataBinding
         }
     }
 
-    fun refresh() {
+    open fun refresh() {
         adapter?.refresh()
     }
 

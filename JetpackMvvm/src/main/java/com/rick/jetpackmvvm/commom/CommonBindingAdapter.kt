@@ -7,7 +7,6 @@ import android.view.animation.Animation
 import android.widget.EditText
 import android.widget.TextView
 import androidx.annotation.ColorInt
-import androidx.annotation.Dimension
 import androidx.annotation.DrawableRes
 import androidx.databinding.BindingAdapter
 import androidx.recyclerview.widget.ListAdapter
@@ -15,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.blankj.utilcode.util.ClickUtils
 import com.blankj.utilcode.util.ResourceUtils
 import com.rick.jetpackmvvm.commom.CommonExtend.getTextWatchers
-import com.rick.jetpackmvvm.util.ViewUtil.addRecyclerViewDivider
 
 /**
  * 通用的 BindingAdapter
@@ -103,19 +101,6 @@ object CommonBindingAdapter {
             adapter.submitList(list)
             adapter.notifyDataSetChanged()
         }
-    }
-
-    /**
-     * RecyclerView Divider
-     */
-    @JvmStatic
-    @BindingAdapter(value = ["recyclerViewDividerColor", "recyclerViewDividerSpace"])
-    fun recyclerViewDivider(
-        view: RecyclerView?,
-        @ColorInt color: Int,
-        @Dimension(unit = Dimension.DP) space: Int,
-    ) {
-        addRecyclerViewDivider(view!!, color, space)
     }
 
     /**

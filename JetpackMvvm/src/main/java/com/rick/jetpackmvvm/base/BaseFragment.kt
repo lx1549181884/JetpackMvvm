@@ -8,6 +8,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentResultListener
+import androidx.navigation.fragment.NavHostFragment
 import com.rick.jetpackmvvm.databinding.FrBaseBinding
 import com.rick.jetpackmvvm.util.BindingUtil
 import com.rick.jetpackmvvm.util.ViewModelUtil
@@ -32,16 +33,13 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
         baseBinding = this
     }.root.apply {
         binding = BindingUtil.createBinding(
+            viewLifecycleOwner,
             this@BaseFragment,
             BaseFragment::class.java,
-            0
-        )
-        (this as ViewGroup).addView(
-            binding.root,
-            ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
+            0,
+            layoutInflater,
+            baseBinding.content,
+            true
         )
     }
 
@@ -49,13 +47,13 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelUtil.getViewModel(this, this, BaseFragment::class.java, 1)
         baseBinding.vm = viewModel
+        baseBinding.fr = this
         init(binding, viewModel)
         listenerKeys()?.let {
             it.forEach { key ->
                 parentFragmentManager.setFragmentResultListener(key, viewLifecycleOwner, this)
             }
         }
-
         try {
             javaClass.getDeclaredMethod("onBackPressed")
             requireActivity().onBackPressedDispatcher.addCallback(
@@ -67,13 +65,22 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
                 })
         } catch (e: Exception) {
         }
+        if (viewModel.loadState.value != BaseVm.LoadState.SUCCESS) {
+            if (load()) {
+                viewModel.loadState.value = BaseVm.LoadState.SUCCESS
+            }
+        }
     }
 
     protected open fun listenerKeys(): Array<String>? = null
 
     override fun onFragmentResult(requestKey: String, result: Bundle) {}
 
-    protected abstract fun init(binding: Binding, viewModel: Vm)
+    protected abstract fun init(binding: Binding, vm: Vm)
 
     protected open fun onBackPressed() {}
+
+    open fun load() = true
+
+    open fun back() = NavHostFragment.findNavController(this).navigateUp()
 }
