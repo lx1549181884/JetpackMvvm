@@ -82,25 +82,18 @@ object CommonBindingAdapter {
     }
 
     /**
-     * RecyclerView Adapter
+     * RecyclerView Adapter List
      */
     @JvmStatic
-    @BindingAdapter("recyclerViewAdapter")
-    fun recyclerViewAdapter(view: RecyclerView, adapter: RecyclerView.Adapter<*>?) {
+    @BindingAdapter(value = ["recyclerViewAdapter", "recyclerViewList"])
+    fun recyclerViewAdapterList(
+        view: RecyclerView,
+        adapter: ListAdapter<*, *>,
+        list: List<Nothing>?
+    ) {
         view.adapter = adapter
-    }
-
-    /**
-     * RecyclerView List
-     */
-    @JvmStatic
-    @BindingAdapter("recyclerViewList")
-    fun recyclerViewList(view: RecyclerView, list: List<Nothing>?) {
-        val adapter = view.adapter
-        if (adapter is ListAdapter<*, *>) {
-            adapter.submitList(list)
-            adapter.notifyDataSetChanged()
-        }
+        adapter.submitList(list)
+        adapter.notifyDataSetChanged()
     }
 
     /**
