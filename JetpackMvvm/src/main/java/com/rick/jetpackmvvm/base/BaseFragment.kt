@@ -65,6 +65,9 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
                 })
         } catch (e: Exception) {
         }
+        if (!loadOnlyOnce()) {
+            viewModel.loadState.value = BaseVm.LoadState.LOADING
+        }
         if (viewModel.loadState.value != BaseVm.LoadState.SUCCESS) {
             if (load()) {
                 viewModel.loadState.value = BaseVm.LoadState.SUCCESS
@@ -83,4 +86,6 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
     open fun load() = true
 
     open fun back() = NavHostFragment.findNavController(this).navigateUp()
+
+    open fun loadOnlyOnce() = true
 }
