@@ -1,6 +1,8 @@
 package com.rick.jetpackmvvm.base
 
 import android.graphics.Color
+import android.graphics.drawable.Drawable
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.rick.jetpackmvvm.commom.NoNullLiveData
 import com.rick.jetpackmvvm.commom.NoNullValue
@@ -15,6 +17,8 @@ open class BaseVm : ViewModel() {
             return Color.TRANSPARENT
         }
     })
+
+    val immerseStatusBarBg = MutableLiveData<Drawable>()
 
     val loadState = NoNullLiveData(object : NoNullValue<LoadState> {
         override fun get(): LoadState {

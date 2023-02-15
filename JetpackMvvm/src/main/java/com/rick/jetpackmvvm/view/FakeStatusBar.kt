@@ -42,7 +42,6 @@ class FakeStatusBar : View {
                 it,
                 color == Color.TRANSPARENT || getLight(color) > 0xFF * 0.6
             )
-            refreshVisibility()
         }
     }
 
@@ -53,20 +52,5 @@ class FakeStatusBar : View {
         val g = colorLong / 0x100L and 0xFF
         val b = colorLong and 0xFF
         return r * 0.3 + g * 0.59 + b * 0.11
-    }
-
-    override fun layout(l: Int, t: Int, r: Int, b: Int) {
-        super.layout(l, t, r, b)
-        refreshVisibility()
-    }
-
-    private fun refreshVisibility() {
-        visibility = IntArray(2).apply { getLocationOnScreen(this) }[1].let {
-            if (it == 0 && color != Color.TRANSPARENT) {
-                VISIBLE
-            } else {
-                GONE
-            }
-        }
     }
 }
