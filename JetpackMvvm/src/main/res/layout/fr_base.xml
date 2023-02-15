@@ -12,10 +12,10 @@
             type="com.rick.jetpackmvvm.base.BaseFragment" />
     </data>
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:background="@{vm.immerseStatusBarBg}">
 
         <com.rick.jetpackmvvm.view.FakeStatusBar
             android:id="@+id/fake_status_bar"
@@ -23,30 +23,37 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:fitsSystemWindows="true"
+            android:orientation="vertical">
 
-            <TextView
-                visible="@{vm.loadState == vm.loadState.LOADING}"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/loading" />
+                android:layout_height="match_parent">
 
-            <TextView
-                onClick="@{()-> fr.load()}"
-                visible="@{vm.loadState == vm.loadState.FAIL}"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/load_error_click_retry" />
+                <TextView
+                    visible="@{vm.loadState == vm.loadState.LOADING}"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/loading" />
 
-            <FrameLayout
-                android:id="@+id/content"
-                visible="@{vm.loadState == vm.loadState.SUCCESS}"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </RelativeLayout>
-    </LinearLayout>
+                <TextView
+                    onClick="@{()-> fr.load()}"
+                    visible="@{vm.loadState == vm.loadState.FAIL}"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/load_error_click_retry" />
+
+                <FrameLayout
+                    android:id="@+id/content"
+                    visible="@{vm.loadState == vm.loadState.SUCCESS}"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </RelativeLayout>
+        </LinearLayout>
+    </RelativeLayout>
 </layout>
