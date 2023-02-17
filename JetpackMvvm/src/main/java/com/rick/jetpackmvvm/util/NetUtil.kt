@@ -103,6 +103,16 @@ object NetUtil {
     fun <D : Any> request(
         fragment: Fragment,
         api: Api<D>,
+        onSuccess: OnSuccess<D?>,
+        onFail: OnFail?
+    ) {
+        request(fragment, api, onSuccess, onFail, true)
+    }
+
+    @JvmStatic
+    fun <D : Any> request(
+        fragment: Fragment,
+        api: Api<D>,
         onSuccess: OnSuccess<D?>?,
         onFail: OnFail?,
         loading: Boolean
@@ -110,7 +120,7 @@ object NetUtil {
         if (loading) {
             requestWithLoading(fragment.childFragmentManager, api, onSuccess, onFail)
         } else {
-            request(fragment.viewLifecycleOwner, api, onSuccess, onFail)
+            request0(fragment.viewLifecycleOwner, api, onSuccess, onFail)
         }
     }
 
@@ -134,7 +144,7 @@ object NetUtil {
         if (loading) {
             requestWithLoading(activity.supportFragmentManager, api, onSuccess, onFail)
         } else {
-            request(activity, api, onSuccess, onFail)
+            request0(activity, api, onSuccess, onFail)
         }
     }
 
@@ -148,7 +158,7 @@ object NetUtil {
         if (!fragmentManager.isStateSaved) {
             with(config.createLoading()) {
                 show(fragmentManager, null)
-                request(this, api, object : OnSuccess<D?> {
+                request0(this, api, object : OnSuccess<D?> {
                     override fun onSuccess(data: D?) {
                         if (isAdded) {
                             dismissAllowingStateLoss()
@@ -168,13 +178,13 @@ object NetUtil {
     }
 
     @JvmStatic
-    fun <D : Any, R : BaseResponseBean<D>> request(
+    private fun <D : Any, R : BaseResponseBean<D>> request0(
         owner: LifecycleOwner?,
         api: Api<D>,
         onSuccess: OnSuccess<D?>?,
         onFail: OnFail?
     ) {
-        request(
+        request0(
             owner,
             { api.request() },
             {
@@ -195,7 +205,7 @@ object NetUtil {
     }
 
     @JvmStatic
-    private fun <R : Any> request(
+    private fun <R : Any> request0(
         owner: LifecycleOwner?,
         api: () -> Call<R>,
         onResponseBody: (R) -> Unit,
@@ -277,7 +287,7 @@ object NetUtil {
         onFail: OnFail?,
         onProgress: FileIOUtils.OnProgressUpdateListener?
     ) {
-        request(
+        request0(
             owner,
             { DownloadService.INSTANCE.download(url) },
             { body ->
