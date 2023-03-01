@@ -54,17 +54,18 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
                 parentFragmentManager.setFragmentResultListener(key, viewLifecycleOwner, this)
             }
         }
-        try {
-            javaClass.getDeclaredMethod("onBackPressed")
-            requireActivity().onBackPressedDispatcher.addCallback(
-                viewLifecycleOwner,
-                object : OnBackPressedCallback(true) {
-                    override fun handleOnBackPressed() {
-                        this@BaseFragment.onBackPressed()
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (!onBackPressed()) {
+                        isEnabled = false
+                        requireActivity().onBackPressed()
+                        isEnabled = true
                     }
-                })
-        } catch (e: Exception) {
-        }
+                }
+            }
+        )
         if (!loadOnlyOnce()) {
             viewModel.loadState.value = BaseVm.LoadState.LOADING
         }
@@ -81,7 +82,7 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
 
     protected abstract fun init(binding: Binding, vm: Vm)
 
-    protected open fun onBackPressed() {}
+    protected open fun onBackPressed(): Boolean = false
 
     open fun load() = true
 

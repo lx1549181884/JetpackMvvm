@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.ViewModel
 import com.blankj.utilcode.util.BarUtils
+import com.blankj.utilcode.util.KeyboardUtils
 import com.rick.jetpackmvvm.util.BindingUtil
 import com.rick.jetpackmvvm.util.ViewModelUtil
 
@@ -19,6 +20,7 @@ abstract class BaseActivity<Binding : ViewDataBinding, Vm : ViewModel> : AppComp
         viewModel = ViewModelUtil.getViewModel(this, this, BaseActivity::class.java, 1)
         setContentView(binding.root)
         init(binding, viewModel)
+        KeyboardUtils.fixAndroidBug5497(this)
     }
 
     protected abstract fun init(binding: Binding, vm: Vm)
