@@ -227,10 +227,9 @@ object NetUtil {
                             }
                         } else {
                             val msg = response.errorBody()?.string() ?: "no message"
+                            onFail(call.request(), response.code(), msg)
                             if (response.code() == HttpsURLConnection.HTTP_UNAUTHORIZED) { // token 失效
-                                ThreadUtils.runOnUiThread { config.onUnauthorized(msg) }
-                            } else {
-                                onFail(call.request(), -1, msg)
+                                config.onUnauthorized(msg)
                             }
                         }
                     } catch (e: Exception) {
