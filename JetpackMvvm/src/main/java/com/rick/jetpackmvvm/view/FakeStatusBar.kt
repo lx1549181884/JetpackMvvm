@@ -6,42 +6,65 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.ColorInt
+import androidx.core.content.res.getBooleanOrThrow
+import androidx.databinding.BindingAdapter
 import com.blankj.utilcode.util.ActivityUtils
 import com.blankj.utilcode.util.BarUtils
+import com.rick.jetpackmvvm.R
 
 class FakeStatusBar : View {
-    constructor(context: Context?) : super(context)
 
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
+    private var bgColor = Color.TRANSPARENT
+    private var contentColor: Boolean? = null
 
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(
+    constructor(context: Context) : super(context) {
+        init(context, null)
+    }
+
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+        init(context, attrs)
+    }
+
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
         context,
         attrs,
         defStyleAttr
-    )
+    ) {
+        init(context, attrs)
+    }
 
-    constructor(
-        context: Context?,
-        attrs: AttributeSet?,
-        defStyleAttr: Int,
-        defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes)
+    private fun init(context: Context, attrs: AttributeSet?) {
+        val typedArray = context.obtainStyledAttributes(attrs, R.styleable.FakeStatusBar)
+        try {
+            setContentColor(typedArray.getBooleanOrThrow(R.styleable.FakeStatusBar_statusBarContentColor))
+        } catch (_: Exception) {
+        }
+        typedArray.recycle()
+        refreshContentColor()
+    }
 
     override fun setLayoutParams(params: ViewGroup.LayoutParams?) {
         params?.height = BarUtils.getStatusBarHeight()
         super.setLayoutParams(params)
     }
 
-    private var color = Color.TRANSPARENT
-
     override fun setBackgroundColor(color: Int) {
         super.setBackgroundColor(color)
-        this.color = color
+        this.bgColor = color
+        refreshContentColor()
+
+    }
+
+    fun setContentColor(isBlackOrWhiteOrAuto: Boolean?) {
+        contentColor = isBlackOrWhiteOrAuto
+        refreshContentColor()
+    }
+
+    private fun refreshContentColor() {
         ActivityUtils.getActivityByContext(context)?.let {
-            BarUtils.setStatusBarLightMode(
-                it,
-                color == Color.TRANSPARENT || getLight(color) > 0xFF * 0.6
-            )
+            val lightModel =
+                contentColor ?: (bgColor == Color.TRANSPARENT || getLight(bgColor) > 0xFF * 0.6)
+            BarUtils.setStatusBarLightMode(it, lightModel)
         }
     }
 
@@ -52,5 +75,13 @@ class FakeStatusBar : View {
         val g = colorLong / 0x100L and 0xFF
         val b = colorLong and 0xFF
         return r * 0.3 + g * 0.59 + b * 0.11
+    }
+
+    companion object {
+        @JvmStatic
+        @BindingAdapter("statusBarContentColor")
+        fun statusBarContentColor(fakeStatusBar: FakeStatusBar, isBlackOrWhite: Boolean?) {
+            fakeStatusBar.setContentColor(isBlackOrWhite)
+        }
     }
 }
