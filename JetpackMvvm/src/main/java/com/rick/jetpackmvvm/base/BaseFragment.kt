@@ -9,6 +9,7 @@ import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentResultListener
 import androidx.navigation.fragment.NavHostFragment
+import com.blankj.utilcode.util.BarUtils
 import com.rick.jetpackmvvm.databinding.FrBaseBinding
 import com.rick.jetpackmvvm.util.BindingUtil
 import com.rick.jetpackmvvm.util.ViewModelUtil
@@ -48,7 +49,15 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
         viewModel = ViewModelUtil.getViewModel(this, this, BaseFragment::class.java, 1)
         baseBinding.vm = viewModel
         baseBinding.fr = this
-        init(binding, viewModel)
+        BarUtils.setNavBarVisibility(requireActivity(), viewModel.navBarVisible.value)
+        if (!loadOnlyOnce()) {
+            viewModel.loadState.value = BaseVm.LoadState.LOADING
+        }
+        if (viewModel.loadState.value != BaseVm.LoadState.SUCCESS) {
+            if (load()) {
+                viewModel.loadState.value = BaseVm.LoadState.SUCCESS
+            }
+        }
         listenerKeys()?.let {
             it.forEach { key ->
                 parentFragmentManager.setFragmentResultListener(key, viewLifecycleOwner, this)
@@ -66,14 +75,7 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
                 }
             }
         )
-        if (!loadOnlyOnce()) {
-            viewModel.loadState.value = BaseVm.LoadState.LOADING
-        }
-        if (viewModel.loadState.value != BaseVm.LoadState.SUCCESS) {
-            if (load()) {
-                viewModel.loadState.value = BaseVm.LoadState.SUCCESS
-            }
-        }
+        init(binding, viewModel)
     }
 
     protected open fun listenerKeys(): Array<String>? = null

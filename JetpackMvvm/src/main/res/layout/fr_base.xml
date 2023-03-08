@@ -21,8 +21,9 @@
 
         <com.rick.jetpackmvvm.view.FakeStatusBar
             android:id="@+id/fake_status_bar"
-            backgroundColor="@{vm.statusBarColor}"
-            visible="@{!vm.immerseStatusBar}"
+            backgroundColor="@{vm.statusBarBgColor}"
+            statusBarContentColor="@{vm.statusBarContentColor}"
+            visible="@{vm.statusBarVisible}"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
