@@ -5,16 +5,13 @@ import androidx.databinding.ViewDataBinding
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.rick.jetpackmvvm.commom.CommonViewHolder
-import com.rick.jetpackmvvm.util.BindingUtil
+import com.rick.jetpackmvvm.util.BindingUtil.createBinding
 
 abstract class BaseListAdapter<Bean : Any, Binding : ViewDataBinding>(diffCallback: DiffUtil.ItemCallback<Bean>) :
     ListAdapter<Bean, CommonViewHolder<Binding>>(diffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        CommonViewHolder<Binding>(BindingUtil.createBinding(parent,
-            this,
-            BaseListAdapter::class.java,
-            1))
+        CommonViewHolder<Binding>(createBinding(BaseListAdapter::class.java, 1, parent))
 
     override fun onBindViewHolder(holder: CommonViewHolder<Binding>, position: Int) {
         initItem(position, getItem(position), holder.binding)

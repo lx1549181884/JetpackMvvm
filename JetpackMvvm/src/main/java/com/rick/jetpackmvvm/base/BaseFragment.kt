@@ -11,8 +11,8 @@ import androidx.fragment.app.FragmentResultListener
 import androidx.navigation.fragment.NavHostFragment
 import com.blankj.utilcode.util.BarUtils
 import com.rick.jetpackmvvm.databinding.FrBaseBinding
-import com.rick.jetpackmvvm.util.BindingUtil
-import com.rick.jetpackmvvm.util.ViewModelUtil
+import com.rick.jetpackmvvm.util.BindingUtil.createBinding
+import com.rick.jetpackmvvm.util.ViewModelUtil.getViewModel
 
 abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment(),
     FragmentResultListener {
@@ -24,7 +24,7 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ) = BindingUtil.createBinding(
+    ) = createBinding(
         viewLifecycleOwner,
         FrBaseBinding::class.java,
         inflater,
@@ -33,9 +33,8 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
     ).apply {
         baseBinding = this
     }.root.apply {
-        binding = BindingUtil.createBinding(
+        binding = createBinding(
             viewLifecycleOwner,
-            this@BaseFragment,
             BaseFragment::class.java,
             0,
             layoutInflater,
@@ -46,7 +45,7 @@ abstract class BaseFragment<Binding : ViewDataBinding, Vm : BaseVm> : Fragment()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel = ViewModelUtil.getViewModel(this, this, BaseFragment::class.java, 1)
+        viewModel = getViewModel(BaseFragment::class.java, 1)
         baseBinding.vm = viewModel
         baseBinding.fr = this
         BarUtils.setNavBarVisibility(requireActivity(), viewModel.navBarVisible.value)

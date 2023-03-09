@@ -5,15 +5,10 @@ import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.FrameLayout
 import androidx.databinding.ViewDataBinding
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
-import com.rick.jetpackmvvm.util.BindingUtil
+import com.rick.jetpackmvvm.util.BindingUtil.createBinding
 
-open abstract class BaseView<Binding : ViewDataBinding> : FrameLayout,
-    LifecycleOwner {
+open abstract class BaseView<Binding : ViewDataBinding> : FrameLayout {
 
-    private val mRegistry by lazy { LifecycleRegistry(this) }
     protected lateinit var binding: Binding
 
     constructor(context: Context) : super(context) {
@@ -33,9 +28,8 @@ open abstract class BaseView<Binding : ViewDataBinding> : FrameLayout,
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
-        binding = BindingUtil.createBinding(
-            this,
-            this,
+        binding = createBinding(
+            null,
             BaseView::class.java,
             0,
             LayoutInflater.from(context),
@@ -46,27 +40,4 @@ open abstract class BaseView<Binding : ViewDataBinding> : FrameLayout,
     }
 
     abstract fun init(context: Context, attrs: AttributeSet?, binding: Binding)
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        mRegistry.currentState = Lifecycle.State.CREATED
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        mRegistry.currentState = Lifecycle.State.DESTROYED
-    }
-
-    override fun onWindowVisibilityChanged(visibility: Int) {
-        super.onWindowVisibilityChanged(visibility)
-        if (visibility == VISIBLE) {
-            mRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-            mRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        } else if (visibility == GONE || visibility == INVISIBLE) {
-            mRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-            mRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        }
-    }
-
-    override fun getLifecycle() = mRegistry
 }
