@@ -25,7 +25,7 @@ object BindingUtil {
     ): B = createBinding(this, base, index, layoutInflater, null, false)
 
     /**
-     * 实例化 BaseFragment 的 ViewDataBinding 泛型，并绑定生命周期
+     * 实例化 BaseFr 的 ViewDataBinding 泛型，并绑定生命周期
      */
     @JvmStatic
     fun <C : P, P : Fragment, B : ViewDataBinding> C.createBinding(

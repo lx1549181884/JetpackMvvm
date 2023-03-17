@@ -1,24 +1,22 @@
 package com.rick.jetpackmvvm.util
 
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import com.blankj.utilcode.util.*
-import com.rick.jetpackmvvm.base.BaseResponseBean
-import com.rick.jetpackmvvm.commom.DownloadService
+import com.rick.jetpackmvvm.other.DownloadService
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
-import retrofit2.adapter.guava.GuavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.BufferedOutputStream
 import java.io.File
@@ -29,285 +27,332 @@ import javax.net.ssl.HttpsURLConnection
 
 /**
  * 网络请求工具
+ * 使用前必须先设置 [NetUtil.envList]
  */
 object NetUtil {
-    private lateinit var config: Config
-    private val onFailDefault = object : OnFail {
-        override fun onFail(code: Int, msg: String?) = ToastUtils.showShort("$code $msg")
-    }
 
+    /**
+     * 网络环境列表
+     */
     @JvmStatic
-    fun init(config: Config) {
-        NetUtil.config = config
+    lateinit var envList: List<Env>
+
+    /**
+     * 加载框
+     */
+    @JvmStatic
+    lateinit var loading: (() -> DialogFragment)
+
+    /**
+     * 请求头
+     */
+    @JvmStatic
+    var headers: ((isAppHost: Boolean) -> Map<String, String>)? = null
+
+    /**
+     * 默认失败回调
+     */
+    @JvmStatic
+    var onFailDefault: ((code: Int, msg: String?) -> Unit)? =
+        { _, msg -> ToastUtils.showShort(msg) }
+
+    /**
+     * token 失效回调
+     */
+    @JvmStatic
+    var onUnauthorized: (() -> Unit)? = null
+
+    private const val KEY = "com.rick.jetpackmvvm.util.NetUtil"
+
+    private var clickCount = 0
+
+    /**
+     * 多次点击可切换环境
+     */
+    @JvmStatic
+    fun click() {
+        ++clickCount
+        if (clickCount >= 5) {
+            var index = envList.indexOfFirst { env.name == it.name }
+            AlertDialog.Builder(ActivityUtils.getTopActivity())
+                .setTitle("请选择网络环境")
+                .setSingleChoiceItems(
+                    envList.map { it.name }.toTypedArray(),
+                    index
+                ) { _, which -> index = which }
+                .setPositiveButton("确定") { _, _ ->
+                    SPStaticUtils.put(KEY, GsonUtils.toJson(envList[index]), true)
+                    AppUtils.relaunchApp(true)
+                }
+                .show()
+        }
     }
 
-    interface Config {
-        fun getHost(): String
-        fun getHeaders(host: String): Map<String, String>?
-        fun onUnauthorized(msg: String)
-        fun createLoading(): DialogFragment
-        fun getFailInterceptor(): OnFail? = null
+    /**
+     * 网络环境类
+     */
+    data class Env(val name: String, val host: String)
+
+    /**
+     * 响应数据类
+     */
+    interface BaseResponse<T> {
+        fun isSuccess(): Boolean = getCode() == 0
+        fun getCode(): Int
+        fun getMsg(): String?
+        fun getData(): T?
     }
 
-    interface Api<D : Any> {
-        fun request(): Call<out BaseResponseBean<D>>
-    }
+    /**
+     * 当前网络环境
+     */
+    @JvmStatic
+    val env: Env
+        get() {
+            GsonUtils.fromJson(SPStaticUtils.getString(KEY), Env::class.java)?.let { spEnv ->
+                envList.forEach { if (spEnv.name == it.name) return it } // 链接可能修改，缓存可能是旧的，需及返回新的
+            }
+            return envList[0]
+        }
 
-    interface OnFail {
-        fun onFail(code: Int, msg: String?)
-    }
-
-    interface OnSuccess<D> {
-        fun onSuccess(data: D)
-    }
-
+    /**
+     * 创建网络请求服务
+     */
     @JvmStatic
     fun <S> createService(serviceClass: Class<S>, api: String?): S {
         return Retrofit.Builder()
-            .baseUrl(config.getHost() + (api ?: ""))
+            .baseUrl(env.host + (api ?: ""))
             .client(
                 OkHttpClient.Builder()
                     .addInterceptor(HttpLoggingInterceptor {
                         LogUtils.d("NetUtil $it")
                     }.apply { setLevel(if (DownloadService::class.java.isAssignableFrom(serviceClass)) HttpLoggingInterceptor.Level.HEADERS else HttpLoggingInterceptor.Level.BODY) })
-                    .addInterceptor(Interceptor {
-                        it.proceed(
-                            it.request().newBuilder().apply {
-                                config.getHeaders(it.request().url.host)?.forEach { (k, v) ->
-                                    run {
+                    .addInterceptor(Interceptor { chain ->
+                        chain.proceed(chain.request().let { request ->
+                            request.newBuilder().apply {
+                                headers?.let {
+                                    it(request.url.host.contains(env.host)).forEach { (k, v) ->
                                         LogUtils.d("NetUtil $k $v")
                                         addHeader(k, v)
                                     }
                                 }
                             }.build()
-                        )
+                        })
                     })
                     .build()
             )
             .callbackExecutor(Executors.newSingleThreadExecutor())
             .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(GuavaCallAdapterFactory.create()) // 支持将 Call 转为 ListenableFuture, PagingResource 使用数据类型
             .build().create(serviceClass)
     }
 
+    /**
+     * Fragment 网络请求
+     */
     @JvmStatic
     fun <D : Any> request(
         fragment: Fragment,
-        api: Api<D>,
-        onSuccess: OnSuccess<D?>?
-    ) {
-        request(fragment, api, onSuccess, onFailDefault, true)
-    }
-
-    @JvmStatic
-    fun <D : Any> request(
-        fragment: Fragment,
-        api: Api<D>,
-        onSuccess: OnSuccess<D?>,
-        onFail: OnFail?
-    ) {
-        request(fragment, api, onSuccess, onFail, true)
-    }
-
-    @JvmStatic
-    fun <D : Any> request(
-        fragment: Fragment,
-        api: Api<D>,
-        onSuccess: OnSuccess<D?>?,
-        onFail: OnFail?,
-        loading: Boolean
+        call: Call<out BaseResponse<D>>,
+        onSuccess: (data: D?) -> Unit,
+        onFail: ((code: Int, msg: String?) -> Unit)? = onFailDefault,
+        loading: Boolean = true
     ) {
         if (loading) {
-            requestWithLoading(fragment.childFragmentManager, api, onSuccess, onFail)
+            request2(fragment.childFragmentManager, call, onSuccess, onFail)
         } else {
-            request0(fragment.viewLifecycleOwner, api, onSuccess, onFail)
+            request1(fragment.viewLifecycleOwner, call, {}, onSuccess, onFail)
         }
     }
 
+    /**
+     * Activity 网络请求
+     */
     @JvmStatic
     fun <D : Any> request(
         activity: AppCompatActivity,
-        api: Api<D>,
-        onSuccess: OnSuccess<D?>?
-    ) {
-        request(activity, api, onSuccess, onFailDefault, true)
-    }
-
-    @JvmStatic
-    fun <D : Any> request(
-        activity: AppCompatActivity,
-        api: Api<D>,
-        onSuccess: OnSuccess<D?>?,
-        onFail: OnFail? = onFailDefault,
-        loading: Boolean
+        call: Call<out BaseResponse<D>>,
+        onSuccess: (data: D?) -> Unit,
+        onFail: ((code: Int, msg: String?) -> Unit)? = onFailDefault,
+        loading: Boolean = true
     ) {
         if (loading) {
-            requestWithLoading(activity.supportFragmentManager, api, onSuccess, onFail)
+            request2(activity.supportFragmentManager, call, onSuccess, onFail)
         } else {
-            request0(activity, api, onSuccess, onFail)
+            request1(activity, call, {}, onSuccess, onFail)
         }
     }
 
-    @JvmStatic
-    fun <D : Any> requestWithLoading(
+    /**
+     * 网络请求
+     * 基于 [request1]，增加了加载框
+     */
+    private fun <D : Any> request2(
         fragmentManager: FragmentManager,
-        api: Api<D>,
-        onSuccess: OnSuccess<D?>?,
-        onFail: OnFail?
+        call: Call<out BaseResponse<D>>,
+        onSuccess: (data: D?) -> Unit,
+        onFail: ((code: Int, msg: String?) -> Unit)? = onFailDefault
     ) {
-        if (!fragmentManager.isStateSaved) {
-            with(config.createLoading()) {
-                show(fragmentManager, null)
-                request0(this, api, object : OnSuccess<D?> {
-                    override fun onSuccess(data: D?) {
-                        if (isAdded) {
-                            dismissAllowingStateLoss()
-                            onSuccess?.onSuccess(data)
-                        }
+        if (!fragmentManager.isStateSaved && !fragmentManager.isDestroyed) {
+            with(loading()) {
+                request1(this, call, { show(fragmentManager, null) }, {
+                    if (isAdded) {
+                        dismissAllowingStateLoss()
+                        onSuccess(it)
                     }
-                }, object : OnFail {
-                    override fun onFail(code: Int, msg: String?) {
-                        if (isAdded) {
-                            dismissAllowingStateLoss()
-                            onFail?.onFail(code, msg)
-                        }
+                }, { code, msg ->
+                    if (isAdded) {
+                        dismissAllowingStateLoss()
+                        onFail?.invoke(code, msg)
                     }
                 })
             }
         }
     }
 
-    @JvmStatic
-    private fun <D : Any, R : BaseResponseBean<D>> request0(
-        owner: LifecycleOwner?,
-        api: Api<D>,
-        onSuccess: OnSuccess<D?>?,
-        onFail: OnFail?
+    /**
+     * 网络请求
+     * 基于 [request0]，解析了 [BaseResponse]，回调转至主线程
+     */
+    private fun <D : Any> request1(
+        owner: LifecycleOwner,
+        call: Call<out BaseResponse<D>>,
+        onStart: () -> Unit,
+        onSuccess: (data: D?) -> Unit,
+        onFail: ((code: Int, msg: String?) -> Unit)?
     ) {
-        request0(
-            owner,
-            { api.request() },
-            {
-                ThreadUtils.runOnUiThread {
-                    if (it.isSuccess()) {
-                        onSuccess?.onSuccess(it.getData())
-                    } else {
-                        onFail?.onFail(it.getCode(), it.getMsg())
-                    }
-                }
-            },
-            object : OnFail {
-                override fun onFail(code: Int, msg: String?) {
-                    onFail?.onFail(code, msg)
+        request0(owner, call, onStart, { resp ->
+            ThreadUtils.runOnUiThread {
+                if (resp.isSuccess()) {
+                    onSuccess(resp.getData())
+                } else {
+                    onFail?.invoke(resp.getCode(), resp.getMsg())
                 }
             }
-        )
+        }, onFail)
     }
 
-    @JvmStatic
+    /**
+     * 网络请求
+     * 最原始的方法
+     */
     private fun <R : Any> request0(
-        owner: LifecycleOwner?,
-        api: () -> Call<R>,
-        onResponseBody: (R) -> Unit,
-        onFail: OnFail?
+        owner: LifecycleOwner,
+        call: Call<R>,
+        onStart: () -> Unit,
+        onRespBody: (R) -> Unit,
+        onFail: ((code: Int, msg: String?) -> Unit)?
     ) {
-        owner?.lifecycle.let { lifecycle ->
+        owner.lifecycle.let { lifecycle ->
+            // 若生命周期已结束，则不请求
+            if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
+            // 监听生命周期
+            lifecycle.addObserver(object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    // 若生命周期结束时，若还在请求，则取消
+                    if (call.isExecuted) call.cancel()
+                    lifecycle.removeObserver(this)
+                    super.onDestroy(owner)
+                }
+            })
+            // 请求回调
             val callback: Callback<R> = object : Callback<R> {
+
                 override fun onResponse(call: Call<R>, response: Response<R>) {
                     try {
-                        if (lifecycle?.currentState == Lifecycle.State.DESTROYED) {
-                            return
-                        }
+                        Thread.sleep(3000)
+                        // 请求成功
                         if (response.isSuccessful) {
                             val body = response.body()
                             if (body != null) {
-                                onResponseBody.invoke(body)
+                                // body 正常
+                                onSuccess(body)
                             } else {
-                                onFail(call.request(), -1, "response body is null")
+                                // body 为 null 失败
+                                onFailure(call, Exception("response body is null"))
                             }
                         } else {
-                            val msg = response.errorBody()?.string() ?: "no message"
-                            onFail(call.request(), response.code(), msg)
-                            if (response.code() == HttpsURLConnection.HTTP_UNAUTHORIZED) { // token 失效
-                                config.onUnauthorized(msg)
-                            }
+                            // code 异常失败
+                            onFail(response.code(), response.errorBody()?.string() ?: "no message")
+                            // token 失效回调
+                            if (response.code() == HttpsURLConnection.HTTP_UNAUTHORIZED) onUnauthorized?.invoke()
                         }
                     } catch (e: Exception) {
-                        onFail(call.request(), -1, e.message)
+                        // 异常失败
+                        onFailure(call, e)
                     }
                 }
 
-                override fun onFailure(call: Call<R>, t: Throwable) {
-                    if (lifecycle?.currentState == Lifecycle.State.DESTROYED) {
-                        return
-                    }
-                    onFail(call.request(), -1, t.message)
+                override fun onFailure(call: Call<R>, t: Throwable) = onFail(-1, t.message)
+
+                /**
+                 * 成功
+                 */
+                private fun onSuccess(body: R) {
+                    // 若生命周期已结束，则不回调
+                    if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
+                    /**
+                     * 因为可能是下载耗时，需要在子线程，所以不在主线程回调，后续有需要再转主线程
+                     */
+                    onRespBody.invoke(body)
                 }
 
-                private fun onFail(req: Request, code: Int, msg: String?) {
-                    ThreadUtils.runOnUiThread {
-                        onFail?.onFail(code, msg)
-                        config.getFailInterceptor()?.onFail(code, "${req.url.toUrl()} ${msg}}")
-                    }
+                /**
+                 * 失败
+                 */
+                private fun onFail(code: Int, msg: String?) {
+                    // 若生命周期已结束，则不回调
+                    if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
+                    ThreadUtils.runOnUiThread { onFail?.invoke(code, msg) }
                 }
             }
-            val call: Call<R> = api.invoke()
-            val observer = arrayOfNulls<LifecycleEventObserver>(1)
-            observer[0] = LifecycleEventObserver { _: LifecycleOwner?, event: Lifecycle.Event ->
-                when (event.targetState) {
-                    Lifecycle.State.STARTED, Lifecycle.State.RESUMED -> if (!call.isExecuted) {
-                        call.enqueue(callback)
-                    }
-                    Lifecycle.State.DESTROYED -> {
-                        lifecycle?.removeObserver(observer[0]!!)
-                        if (call.isExecuted) {
-                            call.cancel()
-                        }
-                    }
-                    else -> {}
-                }
-            }
-            lifecycle?.addObserver(observer[0]!!)
-            when (lifecycle?.currentState) {
-                null, Lifecycle.State.STARTED, Lifecycle.State.RESUMED -> if (!call.isExecuted) {
-                    call.enqueue(callback)
-                }
-                else -> {}
-            }
+            onStart()
+            // 发起请求
+            call.enqueue(callback)
         }
     }
 
+    /**
+     * 下载
+     */
     @JvmStatic
     fun download(
-        owner: LifecycleOwner?,
+        owner: LifecycleOwner,
         url: String,
         filePath: String,
-        onSuccess: OnSuccess<Any?>?,
-        onFail: OnFail?,
+        onSuccess: () -> Unit,
+        onFail: ((code: Int, msg: String?) -> Unit)?,
         onProgress: FileIOUtils.OnProgressUpdateListener?
     ) {
         request0(
             owner,
-            { DownloadService.INSTANCE.download(url) },
+            DownloadService.INSTANCE.download(url),
+            {},
             { body ->
+                // 创建文件
                 FileUtils.createOrExistsFile(filePath)
+                // 文件大小
                 val totalSize = body.contentLength().toDouble()
+                // 读写文件
                 val inputStream = body.byteStream()
                 var os: OutputStream? = null
                 try {
                     os = BufferedOutputStream(FileOutputStream(File(filePath), false), 1024)
                     var curSize = 0
+                    // 更新进度
                     ThreadUtils.runOnUiThread { onProgress?.onProgressUpdate(0.0) }
                     val data = ByteArray(1024)
                     var len: Int
                     while (inputStream.read(data).also { len = it } != -1) {
                         os.write(data, 0, len)
                         curSize += len
+                        // 更新进度
                         ThreadUtils.runOnUiThread { onProgress?.onProgressUpdate(curSize / totalSize) }
                     }
-                    ThreadUtils.runOnUiThread { onSuccess?.onSuccess(null) }
+                    // 下载成功
+                    ThreadUtils.runOnUiThread { onSuccess() }
                 } catch (e: Exception) {
-                    ThreadUtils.runOnUiThread { onFail?.onFail(-1, e.message) }
+                    // 异常失败
+                    ThreadUtils.runOnUiThread { onFail?.invoke(-1, e.message) }
                 } finally {
                     inputStream.close()
                     os?.close()

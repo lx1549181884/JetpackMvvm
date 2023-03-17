@@ -7,6 +7,9 @@ import android.widget.FrameLayout
 import androidx.databinding.ViewDataBinding
 import com.rick.jetpackmvvm.util.BindingUtil.createBinding
 
+/**
+ * 自定义 View 基类
+ */
 open abstract class BaseView<Binding : ViewDataBinding> : FrameLayout {
 
     protected lateinit var binding: Binding
@@ -28,6 +31,7 @@ open abstract class BaseView<Binding : ViewDataBinding> : FrameLayout {
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
+        // 创建 ViewDataBinding
         binding = createBinding(
             null,
             BaseView::class.java,
@@ -36,8 +40,12 @@ open abstract class BaseView<Binding : ViewDataBinding> : FrameLayout {
             this,
             true
         )
+        // 初始化
         init(context, attrs, binding)
     }
 
+    /**
+     * 初始化
+     */
     abstract fun init(context: Context, attrs: AttributeSet?, binding: Binding)
 }

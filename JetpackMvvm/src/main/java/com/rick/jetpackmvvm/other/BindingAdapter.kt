@@ -1,6 +1,5 @@
-package com.rick.jetpackmvvm.commom
+package com.rick.jetpackmvvm.other
 
-import android.annotation.SuppressLint
 import android.text.InputType
 import android.view.View
 import android.view.animation.Animation
@@ -8,60 +7,71 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.databinding.BindingAdapter
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.blankj.utilcode.util.ClickUtils
 import com.blankj.utilcode.util.ResourceUtils
-import com.rick.jetpackmvvm.commom.CommonExtend.getTextWatchers
 
 /**
- * 通用的 BindingAdapter
+ * 常用的 BindingAdapter
  */
-object CommonBindingAdapter {
+object BindingAdapter {
+
+    /**
+     * 是否显示
+     */
     @JvmStatic
     @BindingAdapter("visible")
     fun visible(view: View, visible: Boolean) {
         view.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
+    /**
+     * 是否选中
+     */
     @JvmStatic
     @BindingAdapter("selected")
     fun selected(view: View, selected: Boolean) {
         view.isSelected = selected
     }
 
+    /**
+     * 是否可用
+     */
     @JvmStatic
     @BindingAdapter("enable")
     fun enable(view: View, enable: Boolean) {
         view.isEnabled = enable
     }
 
+    /**
+     * 背景颜色
+     */
     @JvmStatic
     @BindingAdapter("backgroundColor")
     fun backgroundColor(view: View, @ColorInt bgColor: Int) {
         view.setBackgroundColor(bgColor)
     }
 
+    /**
+     * 背景
+     */
     @JvmStatic
-    @BindingAdapter(value = ["onClick"], requireAll = false)
-    fun onClick(view: View?, clickListener: View.OnClickListener?) {
-        ClickUtils.applySingleDebouncing(view, clickListener)
-    }
-
-    @JvmStatic
-    @SuppressLint("UseCompatLoadingForDrawables")
     @BindingAdapter("background")
     fun background(view: View, @DrawableRes drawable: Int) {
-        view.background = view.context.getDrawable(drawable)
+        view.background = AppCompatResources.getDrawable(view.context, drawable)
     }
 
+    /**
+     * 周围图片
+     */
     @JvmStatic
     @BindingAdapter(
         value = ["drawableStart", "drawableTop", "drawableEnd", "drawableBottom"],
         requireAll = false
     )
-    fun drawableStart(
+    fun drawable(
         view: TextView,
         @DrawableRes drawableStart: Int?,
         @DrawableRes drawableTop: Int?,
@@ -82,18 +92,20 @@ object CommonBindingAdapter {
     }
 
     /**
-     * RecyclerView Adapter List
+     * List 和 Adapter
      */
     @JvmStatic
-    @BindingAdapter(value = ["recyclerViewAdapter", "recyclerViewList"])
-    fun recyclerViewAdapterList(
+    @BindingAdapter(value = ["listAdapter", "list"], requireAll = false)
+    fun listAdapter(
         view: RecyclerView,
-        adapter: ListAdapter<*, *>,
+        adapter: ListAdapter<*, *>?,
         list: List<Nothing>?
     ) {
         view.adapter = adapter
-        adapter.submitList(list)
-        adapter.notifyDataSetChanged()
+        adapter?.let {
+            it.submitList(list)
+            it.notifyDataSetChanged()
+        }
     }
 
     /**
@@ -113,31 +125,11 @@ object CommonBindingAdapter {
      */
     @JvmStatic
     @BindingAdapter(value = ["anim", "enableAnim"], requireAll = false)
-    fun anim(view: View, anim: Animation, enableAnim: Boolean = true) {
-        if (enableAnim) {
+    fun anim(view: View, anim: Animation? = null, enableAnim: Boolean = true) {
+        if (anim != null && enableAnim) {
             view.startAnimation(anim)
         } else {
             view.clearAnimation()
         }
-    }
-
-    /**
-     * EditText 正小数
-     * @param places 小数位数
-     */
-    @JvmStatic
-    @BindingAdapter("numberDecimal")
-    fun numberDecimal(view: EditText, places: Int) {
-        view.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-        view.getTextWatchers()?.iterator()?.let { iterator ->
-            while (iterator.hasNext()) {
-                iterator.next().apply {
-                    if (this is NumDecTextWatcher) {
-                        iterator.remove()
-                    }
-                }
-            }
-        }
-        view.addTextChangedListener(NumDecTextWatcher(view, places))
     }
 }
