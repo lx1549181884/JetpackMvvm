@@ -259,7 +259,6 @@ object NetUtil {
 
                 override fun onResponse(call: Call<R>, response: Response<R>) {
                     try {
-                        Thread.sleep(3000)
                         // 请求成功
                         if (response.isSuccessful) {
                             val body = response.body()
