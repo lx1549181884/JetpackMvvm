@@ -6,7 +6,7 @@ import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 
-import com.blankj.utilcode.util.BarUtils;
+import com.gyf.immersionbar.ImmersionBar;
 import com.rick.jetpackmvvm.base.BaseDialog;
 import com.rick.jetpackmvvm.base.BaseViewModel;
 import com.rick.jetpackmvvmdemo.databinding.DialogLoadingBinding;
@@ -20,6 +20,6 @@ public class LoadingDialog extends BaseDialog<DialogLoadingBinding, BaseViewMode
         attributes.height = ViewGroup.LayoutParams.MATCH_PARENT;
         window.setAttributes(attributes);
         window.setDimAmount(0);
-        BarUtils.transparentStatusBar(window);
+        ImmersionBar.with(this).init();
     }
 }

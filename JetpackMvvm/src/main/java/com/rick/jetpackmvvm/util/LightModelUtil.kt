@@ -9,7 +9,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.blankj.utilcode.util.BarUtils
-import com.blankj.utilcode.util.KeyboardUtils
+import com.gyf.immersionbar.ImmersionBar
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -26,10 +26,8 @@ object LightModelUtil {
      */
     fun autoLightModel(activity: ComponentActivity) {
         if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) {
-            // 沉浸状态栏
-            BarUtils.transparentStatusBar(activity)
-            // 修复沉浸状态栏与软键盘冲突 bug
-            KeyboardUtils.fixAndroidBug5497(activity)
+            // 沉浸状态栏，并解决软键盘与底部输入框冲突问题
+            ImmersionBar.with(activity).keyboardEnable(true).init()
             // 绘制监听器的添加与移除
             val onDrawListener = createOnDrawListener(activity)
             activity.window.decorView.viewTreeObserver.addOnDrawListener(onDrawListener)
