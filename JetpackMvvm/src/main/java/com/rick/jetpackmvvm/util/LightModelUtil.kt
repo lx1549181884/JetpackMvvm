@@ -1,7 +1,9 @@
 package com.rick.jetpackmvvm.util
 
 import android.graphics.Color
+import android.os.Build
 import android.view.ViewTreeObserver
+import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.annotation.ColorInt
 import androidx.annotation.IntRange
@@ -78,7 +80,15 @@ object LightModelUtil {
                     val isLight = isLightColor(avgColor)
                     activity.runOnUiThread {
                         // 设置 LightModel
-                        if (!activity.isDestroyed) BarUtils.setStatusBarLightMode(activity, isLight)
+                        if (!activity.isDestroyed) {
+                            BarUtils.setStatusBarLightMode(activity, isLight)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                activity.window.decorView.windowInsetsController?.setSystemBarsAppearance(
+                                    if (isLight) WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS else 0,
+                                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                                )
+                            }
+                        }
                     }
                 } catch (_: Exception) {
                 }
