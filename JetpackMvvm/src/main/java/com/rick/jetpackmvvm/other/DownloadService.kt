@@ -12,7 +12,7 @@ import retrofit2.http.Url
  */
 interface DownloadService {
     companion object {
-        val INSTANCE = createService(DownloadService::class.java, null)
+        val INSTANCE = createService(DownloadService::class.java)
     }
 
     @Streaming

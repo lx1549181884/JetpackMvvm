@@ -1,4 +1,4 @@
-package com.rick.jetpackmvvmdemo.view;
+package com.rick.jetpackmvvm.view;
 
 import android.view.ViewGroup;
 import android.view.Window;
@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import com.gyf.immersionbar.ImmersionBar;
 import com.rick.jetpackmvvm.base.BaseDialog;
 import com.rick.jetpackmvvm.base.BaseViewModel;
-import com.rick.jetpackmvvmdemo.databinding.DialogLoadingBinding;
+import com.rick.jetpackmvvm.databinding.DialogLoadingBinding;
 
 public class LoadingDialog extends BaseDialog<DialogLoadingBinding, BaseViewModel> {
     @Override

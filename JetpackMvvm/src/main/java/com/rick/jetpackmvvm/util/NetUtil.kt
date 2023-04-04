@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.blankj.utilcode.util.*
 import com.rick.jetpackmvvm.other.DownloadService
+import com.rick.jetpackmvvm.view.LoadingDialog
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -41,7 +42,7 @@ object NetUtil {
      * 加载框
      */
     @JvmStatic
-    lateinit var loading: (() -> DialogFragment)
+    var loading: (() -> DialogFragment) = { LoadingDialog() }
 
     /**
      * 请求头
@@ -98,8 +99,8 @@ object NetUtil {
      */
     interface BaseResponse<T> {
         fun isSuccess(): Boolean = getCode() == 0
-        fun getCode(): Int
-        fun getMsg(): String?
+        fun getCode(): Int = 0
+        fun getMsg(): String? = null
         fun getData(): T?
     }
 
@@ -119,9 +120,9 @@ object NetUtil {
      * 创建网络请求服务
      */
     @JvmStatic
-    fun <S> createService(serviceClass: Class<S>, api: String?): S {
+    fun <S> createService(serviceClass: Class<S>, host: String = env.host, api: String? = null): S {
         return Retrofit.Builder()
-            .baseUrl(env.host + (api ?: ""))
+            .baseUrl(host + (api ?: ""))
             .client(
                 OkHttpClient.Builder()
                     .addInterceptor(HttpLoggingInterceptor {
@@ -131,7 +132,7 @@ object NetUtil {
                         chain.proceed(chain.request().let { request ->
                             request.newBuilder().apply {
                                 headers?.let {
-                                    it(request.url.host.contains(env.host)).forEach { (k, v) ->
+                                    it(request.url.host.contains(host)).forEach { (k, v) ->
                                         LogUtils.d("NetUtil $k $v")
                                         addHeader(k, v)
                                     }
