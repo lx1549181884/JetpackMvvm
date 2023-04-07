@@ -80,13 +80,23 @@ object LightModelUtil {
                     val isLight = isLightColor(avgColor)
                     activity.runOnUiThread {
                         // 设置 LightModel
-                        if (!activity.isDestroyed && BarUtils.isStatusBarLightMode(activity) != isLight) {
-                            BarUtils.setStatusBarLightMode(activity, isLight)
+                        if (!activity.isDestroyed) {
+                            if (BarUtils.isStatusBarLightMode(activity) != isLight) {
+                                BarUtils.setStatusBarLightMode(activity, isLight)
+                            }
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                activity.window.decorView.windowInsetsController?.setSystemBarsAppearance(
-                                    if (isLight) WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS else 0,
-                                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                                )
+                                activity.window.decorView.windowInsetsController?.let { controller ->
+                                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS.let {
+                                        val current = controller.systemBarsAppearance and it
+                                        val target = if (isLight) it else 0
+                                        if (current != target) {
+                                            controller.setSystemBarsAppearance(
+                                                controller.systemBarsAppearance xor it,
+                                                it
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
