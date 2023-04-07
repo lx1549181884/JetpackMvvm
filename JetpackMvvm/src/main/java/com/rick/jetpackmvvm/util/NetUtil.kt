@@ -323,6 +323,8 @@ object NetUtil {
         onFail: ((code: Int, msg: String?) -> Unit)?,
         onProgress: FileIOUtils.OnProgressUpdateListener?
     ) {
+        // 初始化进度
+        onProgress?.onProgressUpdate(0.0)
         request0(
             owner,
             DownloadService.INSTANCE.download(url),
@@ -338,8 +340,6 @@ object NetUtil {
                 try {
                     os = BufferedOutputStream(FileOutputStream(File(filePath), false), 1024)
                     var curSize = 0
-                    // 更新进度
-                    ThreadUtils.runOnUiThread { onProgress?.onProgressUpdate(0.0) }
                     val data = ByteArray(1024)
                     var len: Int
                     while (inputStream.read(data).also { len = it } != -1) {
