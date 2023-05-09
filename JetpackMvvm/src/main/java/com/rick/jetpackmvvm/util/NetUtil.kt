@@ -8,7 +8,15 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import com.blankj.utilcode.util.*
+import com.blankj.utilcode.util.ActivityUtils
+import com.blankj.utilcode.util.AppUtils
+import com.blankj.utilcode.util.FileIOUtils
+import com.blankj.utilcode.util.FileUtils
+import com.blankj.utilcode.util.GsonUtils
+import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.SPStaticUtils
+import com.blankj.utilcode.util.ThreadUtils
+import com.blankj.utilcode.util.ToastUtils
 import com.rick.jetpackmvvm.other.DownloadService
 import com.rick.jetpackmvvm.view.LoadingDialog
 import okhttp3.Interceptor
@@ -132,7 +140,7 @@ object NetUtil {
                         chain.proceed(chain.request().let { request ->
                             request.newBuilder().apply {
                                 headers?.let {
-                                    it(request.url.host.contains(host)).forEach { (k, v) ->
+                                    it(host.contains(request.url.host)).forEach { (k, v) ->
                                         LogUtils.d("NetUtil $k $v")
                                         addHeader(k, v)
                                     }
