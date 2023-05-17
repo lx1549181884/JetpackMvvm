@@ -9,6 +9,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.IntRange
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.blankj.utilcode.util.BarUtils
 import com.gyf.immersionbar.ImmersionBar
@@ -22,11 +23,15 @@ import kotlin.math.pow
  */
 object LightModelUtil {
 
+    private val onDrawListeners = hashMapOf<ComponentActivity, ViewTreeObserver.OnDrawListener>()
+    private val lifecycleObservers = hashMapOf<ComponentActivity, LifecycleObserver>()
+
     /**
      * 根据状态栏背景颜色，自动设置 LightModel
      * 使用该方法会沉浸状态栏，因为如此才能截屏至状态栏判断其色值亮度
      */
-    fun autoLightModel(activity: ComponentActivity) {
+    fun setAutoLightModel(activity: ComponentActivity) {
+        cancelAutoLightModel(activity)
         if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) {
             // 沉浸状态栏，并解决软键盘与底部输入框冲突问题
             ImmersionBar.with(activity)
@@ -37,13 +42,54 @@ object LightModelUtil {
             // 绘制监听器的添加与移除
             val onDrawListener = createOnDrawListener(activity)
             activity.window.decorView.viewTreeObserver.addOnDrawListener(onDrawListener)
-            activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            onDrawListeners[activity] = onDrawListener
+            val lifecycleObserver = object : DefaultLifecycleObserver {
                 override fun onDestroy(owner: LifecycleOwner) {
-                    activity.window.decorView.viewTreeObserver.removeOnDrawListener(onDrawListener)
-                    activity.lifecycle.removeObserver(this)
+                    cancelAutoLightModel(activity)
                     super.onDestroy(owner)
                 }
-            })
+            }
+            activity.lifecycle.addObserver(lifecycleObserver)
+            lifecycleObservers[activity] = lifecycleObserver
+        }
+    }
+
+    /**
+     * 取消自动设置 LightModel
+     */
+    fun cancelAutoLightModel(activity: ComponentActivity) {
+        onDrawListeners[activity]?.let {
+            activity.window.decorView.viewTreeObserver.removeOnDrawListener(it)
+            onDrawListeners.remove(activity)
+        }
+        lifecycleObservers[activity]?.let {
+            activity.lifecycle.removeObserver(it)
+            lifecycleObservers.remove(activity)
+        }
+    }
+
+    /**
+     * 设置 LightModel
+     */
+    fun setLightModel(activity: ComponentActivity, isLight: Boolean) {
+        if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) {
+            if (BarUtils.isStatusBarLightMode(activity) != isLight) {
+                BarUtils.setStatusBarLightMode(activity, isLight)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                activity.window.decorView.windowInsetsController?.let { controller ->
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS.let {
+                        val current = controller.systemBarsAppearance and it
+                        val target = if (isLight) it else 0
+                        if (current != target) {
+                            controller.setSystemBarsAppearance(
+                                controller.systemBarsAppearance xor it,
+                                it
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -72,34 +118,18 @@ object LightModelUtil {
         ViewTreeObserver.OnDrawListener {
             executor.execute {
                 try {
+                    if (!onDrawListeners.containsKey(activity)) return@execute
                     // 获取状态栏像素
                     val pixels = getStatusBarPixels(activity)
                     // 计算平均色值
                     val avgColor = getAvgColor(pixels)
                     // 判断是否为亮色
                     val isLight = isLightColor(avgColor)
+                    // 设置 LightModel
                     activity.runOnUiThread {
-                        // 设置 LightModel
-                        if (!activity.isDestroyed) {
-                            if (BarUtils.isStatusBarLightMode(activity) != isLight) {
-                                BarUtils.setStatusBarLightMode(activity, isLight)
-                            }
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                activity.window.decorView.windowInsetsController?.let { controller ->
-                                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS.let {
-                                        val current = controller.systemBarsAppearance and it
-                                        val target = if (isLight) it else 0
-                                        if (current != target) {
-                                            controller.setSystemBarsAppearance(
-                                                controller.systemBarsAppearance xor it,
-                                                it
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        setLightModel(activity, isLight)
                     }
+                    Thread.sleep(100)
                 } catch (_: Exception) {
                 }
             }

@@ -23,7 +23,7 @@ abstract class BaseActivity<B : ViewDataBinding, Vm : ViewModel> : AppCompatActi
         viewModel = getViewModel(BaseActivity::class.java, 1)
         setContentView(binding.root)
         // LightModel 自动化
-        LightModelUtil.autoLightModel(this)
+        LightModelUtil.setAutoLightModel(this)
         // 初始化
         init(binding, viewModel)
     }
