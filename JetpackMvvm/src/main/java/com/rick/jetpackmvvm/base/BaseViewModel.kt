@@ -9,7 +9,7 @@ import com.rick.jetpackmvvm.other.NoNullLiveData
  */
 open class BaseViewModel : ViewModel() {
     // 状态栏颜色
-    val statusBarColor = NoNullLiveData(Color.TRANSPARENT)
+    val statusBarColor = NoNullLiveData(Color.WHITE)
 
     // 显示状态栏
     val statusBarVisible = NoNullLiveData(true)

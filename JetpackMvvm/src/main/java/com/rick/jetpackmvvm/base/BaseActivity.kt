@@ -1,11 +1,12 @@
 package com.rick.jetpackmvvm.base
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.ViewModel
+import com.gyf.immersionbar.ImmersionBar
 import com.rick.jetpackmvvm.util.BindingUtil.createBinding
-import com.rick.jetpackmvvm.util.LightModelUtil
 import com.rick.jetpackmvvm.util.ViewModelUtil.getViewModel
 
 /**
@@ -22,8 +23,11 @@ abstract class BaseActivity<B : ViewDataBinding, Vm : ViewModel> : AppCompatActi
         // 获取 ViewModel
         viewModel = getViewModel(BaseActivity::class.java, 1)
         setContentView(binding.root)
-        // LightModel 自动化
-        LightModelUtil.setAutoLightModel(this)
+        // 沉浸状态栏，并解决软键盘与底部输入框冲突问题
+        ImmersionBar.with(this)
+            .keyboardEnable(true)
+            .navigationBarColorInt(Color.WHITE)
+            .init()
         // 初始化
         init(binding, viewModel)
     }
