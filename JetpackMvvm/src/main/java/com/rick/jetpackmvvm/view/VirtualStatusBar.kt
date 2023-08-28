@@ -40,11 +40,17 @@ class VirtualStatusBar : View {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         setLightModel()
+        visibility = visibility
     }
 
     private fun setLightModel() {
         ActivityUtils.getActivityByContext(context)?.let {
             LightModelUtil.setLightModel(it, color)
         }
+    }
+
+    override fun setVisibility(visibility: Int) {
+        val top = intArrayOf(0, 0).apply { getLocationInWindow(this) }[1]
+        super.setVisibility(if (top > 0) GONE else visibility)
     }
 }

@@ -56,6 +56,12 @@ object NetUtil {
      * 请求头
      */
     @JvmStatic
+    var initClient: ((OkHttpClient.Builder) -> OkHttpClient.Builder) = { it }
+
+    /**
+     * 请求头
+     */
+    @JvmStatic
     var headers: ((isAppHost: Boolean) -> Map<String, String>)? = null
 
     /**
@@ -109,7 +115,7 @@ object NetUtil {
         fun isSuccess(): Boolean = getCode() == 0
         fun getCode(): Int = 0
         fun getMsg(): String? = null
-        fun getData(): T?
+        fun getData(): T
     }
 
     /**
@@ -132,7 +138,7 @@ object NetUtil {
         return Retrofit.Builder()
             .baseUrl(host + (api ?: ""))
             .client(
-                OkHttpClient.Builder()
+                initClient(OkHttpClient.Builder())
                     .addInterceptor(HttpLoggingInterceptor {
                         LogUtils.d("NetUtil $it")
                     }.apply { setLevel(if (DownloadService::class.java.isAssignableFrom(serviceClass)) HttpLoggingInterceptor.Level.HEADERS else HttpLoggingInterceptor.Level.BODY) })
@@ -162,7 +168,7 @@ object NetUtil {
     fun <D : Any> request(
         fragment: Fragment,
         call: Call<out BaseResponse<D>>,
-        onSuccess: (data: D?) -> Unit,
+        onSuccess: (data: D) -> Unit,
         onFail: ((code: Int, msg: String?) -> Unit)? = onFailDefault,
         loading: Boolean = true
     ) {
@@ -180,7 +186,7 @@ object NetUtil {
     fun <D : Any> request(
         activity: AppCompatActivity,
         call: Call<out BaseResponse<D>>,
-        onSuccess: (data: D?) -> Unit,
+        onSuccess: (data: D) -> Unit,
         onFail: ((code: Int, msg: String?) -> Unit)? = onFailDefault,
         loading: Boolean = true
     ) {
@@ -198,7 +204,7 @@ object NetUtil {
     private fun <D : Any> request2(
         fragmentManager: FragmentManager,
         call: Call<out BaseResponse<D>>,
-        onSuccess: (data: D?) -> Unit,
+        onSuccess: (data: D) -> Unit,
         onFail: ((code: Int, msg: String?) -> Unit)? = onFailDefault
     ) {
         if (!fragmentManager.isStateSaved && !fragmentManager.isDestroyed) {
@@ -226,7 +232,7 @@ object NetUtil {
         owner: LifecycleOwner,
         call: Call<out BaseResponse<D>>,
         onStart: () -> Unit,
-        onSuccess: (data: D?) -> Unit,
+        onSuccess: (data: D) -> Unit,
         onFail: ((code: Int, msg: String?) -> Unit)?
     ) {
         request0(owner, call, onStart, { resp ->
@@ -313,9 +319,12 @@ object NetUtil {
                     ThreadUtils.runOnUiThread { onFail?.invoke(code, msg) }
                 }
             }
-            onStart()
-            // 发起请求
-            call.enqueue(callback)
+            // 需要delay一下，否则布局可能不会随键盘收起
+            ThreadUtils.runOnUiThreadDelayed({
+                onStart()
+                // 发起请求
+                call.enqueue(callback)
+            }, 0)
         }
     }
 

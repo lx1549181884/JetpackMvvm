@@ -123,5 +123,5 @@ abstract class BaseFragment<B : ViewDataBinding, Vm : BaseViewModel> : Fragment(
      * 加载数据
      * 在一个 fragment 生命周期内，只自动调用一次
      */
-    fun loadData() {}
+    open fun loadData() {}
 }
